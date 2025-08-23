@@ -10,10 +10,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/sample_project/src/*.js",
+    "build": "tsc && shx chmod +x dist/mcp_server/src/*.js",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "start": "node dist/sample_project/src/index.js",
+    "start": "node dist/mcp_server/src/index.js",
     "start:stdio": "node dist/index.js --stdio",
     "dev": "tsc && node dist/index.js",
     "dev:stdio": "tsc && node dist/index.js --stdio"

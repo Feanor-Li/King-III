@@ -1,6 +1,12 @@
+export interface CliOptions {
+    port?: number;
+    stdio?: boolean;
+}
+
+
 export function parseArgs() {
     const args = process.argv.slice(2);
-    const options = {};
+    const options: CliOptions = {};
     for (let i = 0; i < args.length; i++) {
         switch (args[i]) {
             case '--port':
