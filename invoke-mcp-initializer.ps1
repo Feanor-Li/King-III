@@ -1,4 +1,4 @@
-$port = if ($Env:PORT) { $Env:PORT } else { 9900 }
+$port = if ($Env:PORT) { $Env:PORT } else { 9000 }
 
 $body = @'
 {

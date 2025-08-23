@@ -3,8 +3,8 @@
  */
 export interface ParseImgArgs {
     // Define tool-specific arguments
-    query: string;
-    options?: Record<string, unknown>;
+    prompt: string;
+    imagePath: string;
 }
 
 /**
@@ -14,4 +14,8 @@ export interface CamProResponse {
     // Define API response structure
     data: unknown;
     metadata?: Record<string, unknown>;
+}
+
+export interface ParseImgResponse {
+    text: string;
 }

@@ -1,39 +1,50 @@
 import { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import { CamProClient } from '../client.js';
+import { ParseImgClient } from '../client.js';
 import { ParseImgArgs } from '../types.js';
 
 /**
  * Tool definition for [tool_name]
  */
 export const parseImgToolDefinition: Tool = {
-    name: "CamPro_Parse_Img",
-    description: "Description of what this tool does and when to use it.",
+    name: "Parse_Image_Into_Rules_Of_Thirds",
+    description: "Analyzes the image following rules of thirds of photography, that is iso, shutter speed and aperture. And provides suggestion for configuration if you want to reproduce the same effect.",
     inputSchema: {
         type: "object",
         properties: {
-            // Define input schema
+            prompt: { type: "string" },
+            imagePath: { type: "string" },
         },
-        required: ["required_field"],
-    },
+        required: ["prompt", "imagePath"],
+    }
 };
 
-/**
- * Type guard for [tool] arguments
- */
-function isParseImgArgs(args: unknown): args is ParseImgArgs {
-    return (
-        typeof args === "object" &&
-        args !== null &&
-        "required_field" in args &&
-        typeof (args as { required_field: unknown }).required_field === "string"
-    );
+function isObjectRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+/** Type guard for tool arguments */
+export function isParseImgArgs(args: unknown): args is ParseImgArgs {
+  if (!isObjectRecord(args)) return false;
+
+  // keys must exist
+  if (!("prompt" in args) || !("imagePath" in args)) return false;
+
+  // types must be string
+  const { prompt, imagePath } = args as { prompt: unknown; imagePath: unknown };
+  if (typeof prompt !== "string" || typeof imagePath !== "string") return false;
+
+  // (optional) non-empty checks
+  if (prompt.trim().length === 0) return false;
+  if (imagePath.trim().length === 0) return false;
+
+  return true;
 }
 
 /**
  * Handles [tool] tool calls
  */
 export async function handleParseImgTool(
-    client: CamProClient, 
+    client: ParseImgClient, 
     args: unknown
 ): Promise<CallToolResult> {
     try {
@@ -45,10 +56,10 @@ export async function handleParseImgTool(
             throw new Error("Invalid arguments for CamPro_[action]");
         }
 
-        const result = await client.performRequest(args);
+        const result = await client.parseImage(args);
         
         return {
-            content: [{ type: "text", text: result }],
+            content: [{ type: "text", text: result.result }],
             isError: false,
         };
     } catch (error) {

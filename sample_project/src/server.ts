@@ -4,7 +4,7 @@ import {
     ListToolsRequestSchema,
     InitializedNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { CamProClient } from './client.js';
+import { ParseImgClient } from './client.js';
 import {
     parseImgToolDefinition,
     handleParseImgTool,
@@ -23,7 +23,7 @@ export function createStandaloneServer(apiKey: string): Server {
         }
     );
 
-    const service_client = new CamProClient(apiKey);
+    const service_client = new ParseImgClient();
 
     serverInstance.setNotificationHandler(InitializedNotificationSchema, async () => {
         console.log('CamPro MCP client initialized');
@@ -37,7 +37,7 @@ export function createStandaloneServer(apiKey: string): Server {
         const { name, arguments: args } = request.params;
         
         switch (name) {
-            case "CamPro_[action]":
+            case "CamPro_ParseImg":
                 return await handleParseImgTool(service_client, args);
             default:
                 return {

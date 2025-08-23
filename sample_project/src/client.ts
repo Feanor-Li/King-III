@@ -1,44 +1,49 @@
-import { CamProResponse } from './types.js';
+// sample_project/src/client.ts
+import fs from "node:fs";
+import path from "node:path";
+import FormData from "form-data";
+import fetch from "node-fetch";
+import { ParseImgResponse } from "./types";
 
-export class CamProClient {
-    private apiKey: string;
-    private baseUrl: string = 'https://api.campro.com';
+type ParseImageArgs = {
+  prompt: string;
+  imagePath: string;  // local file to upload
+};
 
-    constructor(apiKey: string) {
-        this.apiKey = apiKey;
+export class ParseImgClient {
+  private PY_SERVER: string;
+
+  constructor(baseUrl = "http://127.0.0.1:8080") {
+    this.PY_SERVER = baseUrl;
+  }
+
+  async parseImage(args: ParseImageArgs): Promise<{ result: string }> {
+    if (!args?.prompt) throw new Error("prompt is required");
+    if (!args?.imagePath) throw new Error("imagePath is required");
+
+    const url = `${this.PY_SERVER}/img/claude`;
+    const filePath = path.resolve(args.imagePath);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`imagePath not found: ${filePath}`);
     }
 
-    /**
-     * Performs API request with proper error handling
-     */
-    async performRequest(params: unknown): Promise<string> {
-        const response = await fetch(`${this.baseUrl}/endpoint`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.apiKey}`,
-            },
-            body: JSON.stringify(params),
-        });
+    const form = new FormData();
+    form.append("prompt", args.prompt);
+    form.append("image", fs.createReadStream(filePath));
 
-        if (!response.ok) {
-            let errorText: string;
-            try {
-                errorText = await response.text();
-            } catch {
-                errorText = "Unable to parse error response";
-            }
-            throw new Error(
-                `CamPro API error: ${response.status} ${response.statusText}\n${errorText}`
-            );
-        }
+    const resp = await fetch(url, {
+      method: "POST",
+      body: form as any,
+      headers: form.getHeaders() as any, // important for form-data package
+    });
 
-        const data: CamProResponse = await response.json();
-        return this.formatResponse(data);
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`POST /img/claude failed: ${resp.status} ${text}`);
     }
 
-    private formatResponse(data: CamProResponse): string {
-        // Format response according to service requirements
-        return JSON.stringify(data, null, 2);
-    }
+    const data = (await resp.json()) as ParseImgResponse;
+    return { result: data?.text ?? "" };
+  }
 }
