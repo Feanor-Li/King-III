@@ -1,0 +1,28 @@
+{
+  "name": "cam-pro-mcp-server",
+  "version": "0.2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "[service]-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/sample_project/src/*.js",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "start": "node dist/sample_project/src/index.js",
+    "start:stdio": "node dist/index.js --stdio",
+    "dev": "tsc && node dist/index.js",
+    "dev:stdio": "tsc && node dist/index.js --stdio"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "dotenv": "^17.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0"
+  }
+}
