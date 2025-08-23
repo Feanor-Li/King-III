@@ -6,7 +6,7 @@ load_dotenv()
 
 async def main():
     # client = AsyncDedalus(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    client = AsyncDedalus(api_key="YOUR_API_KEY_HERE")
+    client = AsyncDedalus(api_key="")
     runner = DedalusRunner(client)
 
     response = await runner.run(
