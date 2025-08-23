@@ -13,7 +13,7 @@ export function loadConfig() {
     if (!apiKey) {
         throw new Error('CAMPRO_API_KEY environment variable is required');
     }
-    const port = parseInt(process.env.PORT || '8080', 10);
+    const port = parseInt(process.env.PORT || '9900', 10);
     const isProduction = process.env.NODE_ENV === 'production';
     return { apiKey, port, isProduction };
 }
