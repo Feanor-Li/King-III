@@ -12,6 +12,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { randomUUID } from 'crypto';
 import { createStandaloneServer } from '../server.js';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
 const sessions = new Map();
 export function startHttpTransport(config) {
     const httpServer = createServer();
@@ -30,6 +32,9 @@ export function startHttpTransport(config) {
                 break;
             case '/receive_message':
                 yield handleReceiveMessage(req, res);
+                break;
+            case '/detect_objects':
+                yield handleDetectObjects(req, res);
                 break;
             default:
                 handleNotFound(res);
@@ -170,4 +175,94 @@ function logServerStart(config) {
         }, null, 2));
         console.log('For backward compatibility, you can also use the /sse endpoint.');
     }
+}
+
+function handleDetectObjects(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (req.method !== 'POST') {
+            res.statusCode = 405;
+            res.end('Method Not Allowed');
+            return;
+        }
+        
+        try {
+            console.log('🎯 MCP Server: Received object detection request');
+            
+            // Parse multipart form data
+            let body = Buffer.alloc(0);
+            for await (const chunk of req) {
+                body = Buffer.concat([body, chunk]);
+            }
+            
+            // Forward the request to Python server
+            const formData = new FormData();
+            
+            // Extract file from the request body (assuming it's multipart/form-data)
+            const boundary = req.headers['content-type']?.split('boundary=')[1];
+            if (!boundary) {
+                throw new Error('No boundary found in content-type');
+            }
+            
+            // For now, let's extract the file data manually
+            const bodyStr = body.toString();
+            const fileMatch = bodyStr.match(/filename="([^"]+)"/);
+            const fileName = fileMatch ? fileMatch[1] : 'image.jpg';
+            
+            // Extract binary data between boundaries
+            const parts = bodyStr.split(`--${boundary}`);
+            let fileData = null;
+            for (const part of parts) {
+                if (part.includes('filename=')) {
+                    const headerEnd = part.indexOf('\r\n\r\n');
+                    if (headerEnd !== -1) {
+                        const binaryStart = headerEnd + 4;
+                        const binaryEnd = part.lastIndexOf('\r\n--');
+                        if (binaryEnd !== -1) {
+                            fileData = Buffer.from(part.slice(binaryStart, binaryEnd), 'binary');
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            if (!fileData) {
+                throw new Error('Could not extract file data from request');
+            }
+            
+            formData.append('file', fileData, fileName);
+            
+            console.log('🚀 MCP Server: Forwarding request to Python server...');
+            
+            const pythonResponse = yield fetch('http://localhost:8080/detect_objects', {
+                method: 'POST',
+                body: formData,
+                headers: formData.getHeaders()
+            });
+            
+            if (!pythonResponse.ok) {
+                throw new Error(`Python server responded with ${pythonResponse.status}: ${pythonResponse.statusText}`);
+            }
+            
+            const result = yield pythonResponse.json();
+            console.log('✅ MCP Server: Got response from Python server');
+            
+            // Return the result to the user
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 'object_detection_complete',
+                data: result,
+                processed_by: 'mcp_server_proxy',
+                timestamp: new Date().toISOString()
+            }));
+            
+        } catch (error) {
+            console.error('❌ MCP Server: Error in object detection proxy:', error);
+            res.statusCode = 500;
+            res.end(JSON.stringify({ 
+                error: 'Object detection failed', 
+                details: error.message,
+                processed_by: 'mcp_server_proxy'
+            }));
+        }
+    });
 }

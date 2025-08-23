@@ -119,6 +119,97 @@ async def detect_objects(file: UploadFile = File(...)):
             "error": f"Error processing image: {str(e)}"
         }, status_code=500)
 
+
+
+
+@app.post("/extract_photo_parameters")
+async def extract_photo_parameters(file: UploadFile = File(...)):
+    """
+    Extract photo parameters from uploaded image using Claude
+    Returns camera settings, exposure info, and photo characteristics
+    """
+    try:
+        # Read the uploaded image
+        image_bytes = await file.read()
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+        
+        # Get image media type
+        media_type = file.content_type if file.content_type else "image/jpeg"
+        
+        # Use Claude to analyze the image for photo parameters
+        response = claude_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": image_base64
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "Analyze this photo and extract camera/photo parameters that would be useful for iPhone camera adjustments. Estimate values for: zoom level (1x, 2x, etc), brightness (-100 to 100), contrast (-100 to 100), highlights (-100 to 100), shadows (-100 to 100), saturation (-100 to 100), sharpness (-100 to 100), exposure compensation (-2 to 2), white balance (auto/sunny/cloudy/tungsten/fluorescent), focus mode (auto/manual), and any other relevant settings. Return in JSON format: {\"parameters\": [{\"name\": \"parameter_name\", \"value\": estimated_value, \"range\": \"min-max\", \"unit\": \"unit_type\"}]}"
+                        }
+                    ]
+                }
+            ]
+        )
+        
+        # Parse the response to extract photo parameters
+        parameters_result = response.content[0].text
+        
+        # Prepare JSON message for MCP server
+        mcp_message = {
+            "type": "photo_parameters_result",
+            "data": {
+                "parameters_extracted": parameters_result,
+                "filename": file.filename,
+                "content_type": file.content_type,
+                "timestamp": os.environ.get('TIMESTAMP', ''),
+                "source": "python_fastapi_server"
+            }
+        }
+        
+        # Send to MCP server (assuming it's running on port 9900)
+        try:
+            import requests
+            mcp_response = requests.post(
+                "http://localhost:9900/receive_message",
+                json=mcp_message,
+                timeout=5
+            )
+            if mcp_response.status_code == 200:
+                try:
+                    print(f"MCP Server response: {mcp_response.json()}")
+                except:
+                    print(f"MCP Server response (text): {mcp_response.text}")
+            else:
+                print(f"MCP Server error: {mcp_response.status_code} - {mcp_response.text}")
+            
+            print(f"Message to MCP: {json.dumps(mcp_message, indent=2)}")
+            print(f"Sent to MCP server: {mcp_response.status_code}")
+        except Exception as mcp_error:
+            print(f"Failed to send to MCP: {str(mcp_error)}")
+        
+        return JSONResponse({
+            "parameters_extracted": parameters_result,
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "mcp_sent": True
+        })
+        
+    except Exception as e:
+        return JSONResponse({
+            "error": f"Error processing image: {str(e)}"
+        }, status_code=500)
+
+
 @app.post("/test_mcp_communication")
 async def test_mcp_communication():
     """
