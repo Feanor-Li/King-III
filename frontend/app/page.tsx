@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { Slider } from "@/components/ui/slider"
 import {
   Upload,
   Camera,
@@ -16,13 +16,12 @@ import {
   Eye,
   Aperture,
   Sun,
-  Palette,
   Send,
   RotateCcw,
-  Heart,
   Sparkles,
   Target,
   Focus,
+  Settings,
 } from "lucide-react"
 
 interface AnalysisResult {
@@ -37,6 +36,10 @@ interface AnalysisResult {
     contrast: number
     highlights: number
     shadows: number
+    iso: number
+    aperture: number
+    shutterSpeed: number
+    whiteBalance: number
   }
   color: {
     saturation: number
@@ -90,6 +93,10 @@ export default function SmartPhotographyApp() {
           contrast: 68,
           highlights: 85,
           shadows: 55,
+          iso: 200,
+          aperture: 2.8,
+          shutterSpeed: 125,
+          whiteBalance: 5600,
         },
         color: {
           saturation: 75,
@@ -148,6 +155,18 @@ export default function SmartPhotographyApp() {
     }, 3000)
   }
 
+  const handleExposureChange = (parameter: string, value: number[]) => {
+    if (analysisResult) {
+      setAnalysisResult({
+        ...analysisResult,
+        exposure: {
+          ...analysisResult.exposure,
+          [parameter]: value[0],
+        },
+      })
+    }
+  }
+
   const handleSendMessage = () => {
     if (currentMessage.trim()) {
       setChatMessages((prev) => [...prev, { type: "user", content: currentMessage }])
@@ -166,8 +185,23 @@ export default function SmartPhotographyApp() {
   }
 
   const handleConfigureCamera = () => {
-    alert("Configuring iPhone camera settings...\n\nISO: 200\nAperture: f/2.8\nShutter: 1/125s\nWhite Balance: Auto")
+    if (analysisResult) {
+      alert(
+        `Configuring iPhone camera settings...\n\nISO: ${analysisResult.exposure.iso}\nAperture: f/${analysisResult.exposure.aperture}\nShutter: 1/${analysisResult.exposure.shutterSpeed}s\nWhite Balance: ${analysisResult.exposure.whiteBalance}K`,
+      )
+    }
   }
+
+  const exposureParameters = [
+    { key: "brightness", label: "Brightness", min: 0, max: 100, step: 1, unit: "%" },
+    { key: "contrast", label: "Contrast", min: 0, max: 100, step: 1, unit: "%" },
+    { key: "highlights", label: "Highlights", min: 0, max: 100, step: 1, unit: "%" },
+    { key: "shadows", label: "Shadows", min: 0, max: 100, step: 1, unit: "%" },
+    { key: "iso", label: "ISO", min: 100, max: 3200, step: 100, unit: "" },
+    { key: "aperture", label: "Aperture", min: 1.4, max: 16, step: 0.1, unit: "f/" },
+    { key: "shutterSpeed", label: "Shutter Speed", min: 30, max: 4000, step: 10, unit: "1/s" },
+    { key: "whiteBalance", label: "White Balance", min: 2500, max: 10000, step: 100, unit: "K" },
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card/20 to-secondary/10">
@@ -253,12 +287,12 @@ export default function SmartPhotographyApp() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Camera className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Smart Photography Assistant</h1>
-                <p className="text-sm text-muted-foreground">Make every photo perfect</p>
+                <h1 className="text-2xl font-bold text-foreground">Real Pro Photographer</h1>
+                <p className="text-sm text-muted-foreground">AI-powered camera configuration</p>
               </div>
             </div>
             <Badge
@@ -266,7 +300,7 @@ export default function SmartPhotographyApp() {
               className="gap-2 px-4 py-2 bg-gradient-to-r from-accent/20 to-primary/20 border-accent/30"
             >
               <Sparkles className="w-4 h-4" />
-              AI-Powered Analysis
+              Pro Mode
             </Badge>
           </div>
         </div>
@@ -277,11 +311,11 @@ export default function SmartPhotographyApp() {
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-8">
               <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
-                <Heart className="w-10 h-10 text-primary-foreground" />
+                <Camera className="w-10 h-10 text-primary-foreground" />
               </div>
-              <h2 className="text-3xl font-bold text-foreground mb-4">Start Your Photography Journey</h2>
-              <p className="text-lg text-muted-foreground">
-                Upload a photo you love, and I'll help you analyze and optimize shooting parameters
+              <h2 className="text-4xl font-bold text-foreground mb-4">Shoot Like a Pro</h2>
+              <p className="text-xl text-muted-foreground">
+                Upload any photo and get perfect camera settings for your iPhone
               </p>
             </div>
 
@@ -290,10 +324,9 @@ export default function SmartPhotographyApp() {
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
                   <Upload className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-foreground">Drag & Drop or Click to Upload Photo</h3>
+                <h3 className="text-xl font-semibold mb-3 text-foreground">Upload Your Reference Photo</h3>
                 <p className="text-muted-foreground text-center mb-8 max-w-md leading-relaxed">
-                  Supports JPG, PNG formats. We'll intelligently analyze your photo's composition, exposure, and color
-                  to provide professional shooting advice
+                  Drop any photo here and we'll analyze it to configure your iPhone camera automatically
                 </p>
                 <Button onClick={() => fileInputRef.current?.click()} size="lg" className="px-8 py-3 text-lg">
                   <Upload className="w-5 h-5 mr-2" />
@@ -491,66 +524,84 @@ export default function SmartPhotographyApp() {
                 </Card>
               ) : analysisResult ? (
                 <>
-                  {/* Composition Analysis */}
-                  <Card className="bg-gradient-to-br from-card to-secondary/20 border-primary/20 animate-in slide-in-from-right duration-500">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3 text-lg">
-                        <Palette className="w-5 h-5 text-primary" />
-                        Composition Analysis
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {Object.entries(analysisResult.composition).map(([key, value], index) => {
-                        const labels = {
-                          ruleOfThirds: "Rule of Thirds",
-                          leadingLines: "Leading Lines",
-                          symmetry: "Symmetry",
-                          framing: "Framing",
-                        }
-                        return (
-                          <div
-                            key={key}
-                            className="animate-in slide-in-from-left duration-500"
-                            style={{ animationDelay: `${index * 100}ms` }}
-                          >
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="font-medium">{labels[key as keyof typeof labels]}</span>
-                              <span className="text-primary font-semibold">{value}%</span>
-                            </div>
-                            <Progress value={value} className="h-2" />
+                  <Card className="bg-gradient-to-br from-amber-500/10 via-card to-amber-600/5 border-amber-400/30 shadow-lg animate-in slide-in-from-right duration-500">
+                    <CardContent className="p-6">
+                      <Button
+                        onClick={handleConfigureCamera}
+                        className="w-full h-16 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 text-lg font-semibold"
+                        size="lg"
+                      >
+                        <div className="flex items-center justify-center gap-4">
+                          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <Aperture className="w-6 h-6" />
                           </div>
-                        )
-                      })}
+                          <div className="text-left">
+                            <div className="text-lg font-bold">Apply to iPhone Camera</div>
+                            <div className="text-sm opacity-90">Configure settings automatically</div>
+                          </div>
+                          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                        </div>
+                      </Button>
                     </CardContent>
                   </Card>
 
-                  {/* Exposure Analysis */}
-                  <Card className="bg-gradient-to-br from-card to-secondary/20 border-primary/20 animate-in slide-in-from-right duration-500 delay-200">
+                  <Card className="bg-gradient-to-br from-card to-secondary/20 border-primary/20 animate-in slide-in-from-right duration-500">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-3 text-lg">
-                        <Sun className="w-5 h-5 text-primary" />
+                        <Settings className="w-5 h-5 text-primary" />
                         Exposure Parameters
                       </CardTitle>
+                      <CardDescription>
+                        Adjust camera settings in real-time to match your reference photo
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(analysisResult.exposure).map(([key, value], index) => {
-                          const labels = {
-                            brightness: "Brightness",
-                            contrast: "Contrast",
-                            highlights: "Highlights",
-                            shadows: "Shadows",
-                          }
+                    <CardContent className="space-y-6">
+                      <div className="grid gap-6">
+                        {exposureParameters.map((param, index) => {
+                          const currentValue =
+                            analysisResult.exposure[param.key as keyof typeof analysisResult.exposure]
                           return (
                             <div
-                              key={key}
-                              className="text-center p-4 bg-gradient-to-br from-secondary/30 to-primary/10 rounded-xl animate-in zoom-in duration-500"
-                              style={{ animationDelay: `${400 + index * 100}ms` }}
+                              key={param.key}
+                              className="animate-in slide-in-from-left duration-500 space-y-3"
+                              style={{ animationDelay: `${index * 100}ms` }}
                             >
-                              <Label className="text-sm text-muted-foreground block mb-1">
-                                {labels[key as keyof typeof labels]}
-                              </Label>
-                              <div className="text-2xl font-bold text-primary">{value}%</div>
+                              <div className="flex justify-between items-center">
+                                <Label className="text-sm font-medium text-foreground">{param.label}</Label>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-primary min-w-[60px] text-right">
+                                    {param.unit === "f/"
+                                      ? `f/${currentValue}`
+                                      : param.unit === "1/s"
+                                        ? `1/${currentValue}s`
+                                        : `${currentValue}${param.unit}`}
+                                  </span>
+                                </div>
+                              </div>
+                              <Slider
+                                value={[currentValue]}
+                                onValueChange={(value) => handleExposureChange(param.key, value)}
+                                min={param.min}
+                                max={param.max}
+                                step={param.step}
+                                className="w-full"
+                              />
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>
+                                  {param.unit === "f/"
+                                    ? `f/${param.min}`
+                                    : param.unit === "1/s"
+                                      ? `1/${param.min}s`
+                                      : `${param.min}${param.unit}`}
+                                </span>
+                                <span>
+                                  {param.unit === "f/"
+                                    ? `f/${param.max}`
+                                    : param.unit === "1/s"
+                                      ? `1/${param.max}s`
+                                      : `${param.max}${param.unit}`}
+                                </span>
+                              </div>
                             </div>
                           )
                         })}
@@ -577,14 +628,6 @@ export default function SmartPhotographyApp() {
                           <p className="text-sm leading-relaxed">{suggestion}</p>
                         </div>
                       ))}
-                      <Button
-                        onClick={handleConfigureCamera}
-                        className="w-full mt-6 animate-in zoom-in duration-500 delay-1000"
-                        size="lg"
-                      >
-                        <Aperture className="w-5 h-5 mr-2" />
-                        Configure iPhone Camera
-                      </Button>
                     </CardContent>
                   </Card>
 
