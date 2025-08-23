@@ -13,3 +13,16 @@ produce
 ```
 {"text":"15 + 29 = 44"}
 ```
+
+In order to use the image processing, set up the environment by installing
+```bash
+pip install fastapi uvicorn python-multipart
+pip install anthropic
+```
+Then, start the server as expected and send request using
+```bash
+ curl -X POST "http://localhost:8080/img/claude"  -F "prompt=Summarize this chart"   -F "image=@<Your Img Path>"
+```
+
+Sample Img Path on windows: `C:\Users\Alice\Pictures\image.jpg`
+Sample Img Path on Mac: `/Users/alice/Pictures/image.jpg`
