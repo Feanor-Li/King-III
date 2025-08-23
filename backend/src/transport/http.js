@@ -17,6 +17,7 @@ export function startHttpTransport(config) {
     const httpServer = createServer();
     httpServer.on('request', (req, res) => __awaiter(this, void 0, void 0, function* () {
         const url = new URL(req.url, `http://${req.headers.host}`);
+        console.log('🔍 Incoming request to:', url.pathname);
         switch (url.pathname) {
             case '/mcp':
                 yield handleMcpRequest(req, res, config);
@@ -26,6 +27,9 @@ export function startHttpTransport(config) {
                 break;
             case '/health':
                 handleHealthCheck(res);
+                break;
+            case '/receive_message':
+                yield handleReceiveMessage(req, res);
                 break;
             default:
                 handleNotFound(res);
@@ -98,6 +102,45 @@ function createNewSession(req, res, config) {
         }
     });
 }
+function handleReceiveMessage(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (req.method !== 'POST') {
+            res.statusCode = 405;
+            res.end('Method Not Allowed');
+            return;
+        }
+        
+        try {
+            let body = '';
+            for await (const chunk of req) {
+                body += chunk;
+            }
+            
+            const message = JSON.parse(body);
+            console.log('📨 Received message from Python server:', JSON.stringify(message, null, 2));
+            
+            // Process the message (you can add your logic here)
+            const processedMessage = {
+                received_at: new Date().toISOString(),
+                original_message: message,
+                processed_by: 'dedalus_mcp_server',
+                status: 'success'
+            };
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 'message_received',
+                data: processedMessage
+            }));
+            
+        } catch (error) {
+            console.error('Error processing message:', error);
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'Invalid JSON message' }));
+        }
+    });
+}
+
 function handleHealthCheck(res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
