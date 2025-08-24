@@ -18,7 +18,6 @@ export class ParseImgClient {
   }
 
   async parseImage(args: ParseImageArgs): Promise<{ result: string }> {
-    if (!args?.prompt) throw new Error("prompt is required");
     if (!args?.imagePath) throw new Error("imagePath is required");
 
     const url = `${this.PY_SERVER}/img/claude`;
@@ -29,7 +28,6 @@ export class ParseImgClient {
     }
 
     const form = new FormData();
-    form.append("prompt", args.prompt);
     form.append("image", fs.createReadStream(filePath));
 
     const resp = await fetch(url, {
