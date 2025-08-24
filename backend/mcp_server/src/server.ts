@@ -8,6 +8,8 @@ import { ParseImgClient } from './client.js';
 import {
     parseImgToolDefinition,
     handleParseImgTool,
+    detectObjectToolDefinition,
+    handleDetectObjectTool,
 } from './tools/index.js';
 
 export function createStandaloneServer(apiKey: string): Server {
@@ -30,7 +32,7 @@ export function createStandaloneServer(apiKey: string): Server {
     });
 
     serverInstance.setRequestHandler(ListToolsRequestSchema, async () => ({
-        tools: [parseImgToolDefinition],
+        tools: [parseImgToolDefinition, detectObjectToolDefinition],
     }));
 
     serverInstance.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -39,6 +41,8 @@ export function createStandaloneServer(apiKey: string): Server {
         switch (name) {
             case "CamPro_ParseImg":
                 return await handleParseImgTool(service_client, args);
+            case "CamPro_DetectObj":
+                return await handleDetectObjectTool(service_client, args);
             default:
                 return {
                     content: [{ type: "text", text: `Unknown tool: ${name}` }],

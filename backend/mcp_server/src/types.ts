@@ -7,6 +7,10 @@ export interface ParseImgArgs {
     imagePath: string;
 }
 
+export interface DetectObjectArgs {
+    file: string;
+}
+
 /**
  * External API response structure
  */
@@ -17,5 +21,9 @@ export interface CamProResponse {
 }
 
 export interface ParseImgResponse {
+    text: string;
+}
+
+export interface DetectObjectResponse {
     text: string;
 }

@@ -1,6 +1,6 @@
 import { Tool, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ParseImgClient } from '../client.js';
-import { ParseImgArgs } from '../types.js';
+import { ParseImgArgs, DetectObjectArgs } from '../types.js';
 
 /**
  * Tool definition for [tool_name]
@@ -17,6 +17,18 @@ export const parseImgToolDefinition: Tool = {
         required: ["prompt", "imagePath"],
     }
 };
+
+export const detectObjectToolDefinition: Tool = {
+    name: "Detect_Object_Tool",
+    description: "Detect the important objects in the image",
+    inputSchema: {
+        type: "object",
+        properties: {
+            file: {type: "string"}
+        },
+        required: ["file"]
+    }
+}
 
 function isObjectRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -40,6 +52,17 @@ export function isParseImgArgs(args: unknown): args is ParseImgArgs {
   return true;
 }
 
+export function isDetectObjectArgs(args: unknown): args is DetectObjectArgs {
+    if (!isObjectRecord(args)) return false;
+
+    if (!("file" in args)) return false;
+
+    const {file} = args as {file: unknown};
+    if (typeof file !== "string") return false;
+
+    return true;
+}
+
 /**
  * Handles [tool] tool calls
  */
@@ -57,6 +80,38 @@ export async function handleParseImgTool(
         }
 
         const result = await client.parseImage(args);
+        
+        return {
+            content: [{ type: "text", text: result.result }],
+            isError: false,
+        };
+    } catch (error) {
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+                },
+            ],
+            isError: true,
+        };
+    }
+}
+
+export async function handleDetectObjectTool(
+    client: ParseImgClient,
+    args: unknown
+): Promise<CallToolResult> {
+    try {
+        if (!args) {
+            throw new Error("No arguments provided");
+        }
+
+        if (!isDetectObjectArgs(args)) {
+            throw new Error("Invalid arguments for CamPro_[action]");
+        }
+
+        const result = await client.detectObject(args);
         
         return {
             content: [{ type: "text", text: result.result }],
